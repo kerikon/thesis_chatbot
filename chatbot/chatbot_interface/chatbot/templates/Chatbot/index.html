@@ -1,0 +1,105 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        {% load static %}
+        <link rel="stylesheet" type="text/css" href="{% static 'chatbot/style.css' %}">
+    </head>
+    <body>
+        <div class="container">
+            <h3 class=" text-center">Chatbot</h3>
+            <div class="chatbot">
+                <div class="chat">
+                    <div class="chat_history" id="history">
+                        {%for message in response%}
+                            {%if message.sender == "user"%}
+                                <div class="user_msg"> <!--"chatbot_msg", "user_msg"-->
+                                    <div class="user_sent_msg"> <!--"chatbot_received_msg", "user_sent_msg"-->
+                                        <div class=""> <!--"chatbot_received_withd_msg", ""-->
+                                            <p>{{message.message|linebreaks}}</p>
+                                            <span class="time_date">{{message.time}}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {%else%}
+                                <div class="chatbot_msg"> <!--"chatbot_msg", "user_msg"-->
+                                    <div class="chatbot_received_msg"> <!--"chatbot_received_msg", "user_sent_msg"-->
+                                        <div class="chatbot_received_withd_msg"> <!--"chatbot_received_withd_msg", ""-->
+                                            {%if message.type == "text"%}
+                                                <p>{{message.message|linebreaks}}</p>
+                                            {%elif message.type == "image"%}
+                                                <img class="img_display" onclick="openModal(this)" src="{% static message.message %}" alt="Path Image" width="80%" height="80%">
+                                            {%elif message.type == "date"%}
+                                                <form method="get">
+                                                    <input type="hidden" id="datepicker_{{ message.id }}" name="datepicker">
+                                                    <div id="inline_datepicker_{{ message.id }}"></div>
+                                                    {% if forloop.counter == response|length|add:"-1" %}
+                                                        <button class="date_send_btn" type="submit">Submit chosen date</button>
+                                                    {% else %}
+                                                        <button class="date_send_btn" type="submit" disabled>Submit chosen date</button>
+                                                    {% endif %}
+                                                </form>
+                                            {%endif%}
+                                            <span class="time_date">{{message.time}}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {%endif%}
+                        {%endfor%}
+                    </div>
+                    <div class="user_input_msg">
+                        <div class="user_input_msg_write">
+                            <form method="get">
+                                <input type="text" class="user_write_msg" placeholder="Type a message" name="input" autofocus/>
+                                <button class="msg_send_btn" type="submit" value="Send"><i class="fa fa-arrow-circle-right" aria-hidden="true"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+             </div>
+        </div>
+        <!-- The Modal -->
+        <div id="imgModal" class="modal" onclick="closeModal(this)">
+            <img src="" class="modal-content" id="modal_img">
+        </div>
+    </body>
+</html>
+{% block extra_js %}
+    <script>
+        function openModal(_img) {
+            var modal = document.getElementById("imgModal");
+            var modalImg = document.getElementById("modal_img");
+
+            modal.style.display = "block";
+            modalImg.src = _img.src;
+        }
+
+        function closeModal(_modal) {
+            _modal.style.display = "none";
+        }
+
+        {%for message in response%}
+            {%if message.type == "date"%}
+                $('#inline_datepicker_{{ message.id }}').datepicker({
+                    beforeShowDay: function(date){
+                        var calendarDate = jQuery.datepicker.formatDate('dd.mm.yy', date);
+                        return [ {{ message.message | safe }}.indexOf(calendarDate) != -1 ]
+                    },
+                    dateFormat: "dd.mm.yy",
+                    minDate: "{{message.message.0}}",
+                    maxDate: "{{message.message|last}}",
+                    altField: '#datepicker_{{ message.id }}'
+                });
+                $('#datepicker_{{ message.id }}').change(function() {
+                    $('#inline_datepicker_{{ message.id }}').datepicker('setDate', $(this).val());
+                });
+            {%endif%}
+        {%endfor%}
+
+        var objDiv = document.getElementById("history");
+        objDiv.scrollTop = objDiv.scrollHeight;
+    </script>
+{% endblock extra_js %}

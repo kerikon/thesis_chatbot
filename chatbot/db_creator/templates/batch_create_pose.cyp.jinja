@@ -1,0 +1,16 @@
+MATCH (run:Run)
+WHERE run.bagfile_location = "{{ path }}"
+
+WITH [
+{% for pose in poses %}
+    {properties: {pos_x: {{ pose.pos_x }}, pos_y: {{ pose.pos_y }},
+     orien_z: {{ pose.orien_z }}, orien_w: {{ pose.orien_w }} }, time: {{ pose.time }} }
+
+    {% if not loop.last %}
+        ,
+    {% endif %}
+{% endfor %}
+] AS batch, run
+UNWIND batch as row
+CREATE (pose:Pose)<-[:at_time {time: row.time}]-(run)
+SET pose += row.properties

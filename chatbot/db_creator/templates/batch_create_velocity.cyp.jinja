@@ -1,0 +1,21 @@
+MATCH (run:Run)
+WHERE run.bagfile_location = "{{ path }}"
+
+CREATE (velocity_stats:VelocityStatistic)<-[:reached]-(run)
+SET velocity_stats.avg_linear = {{ avg_vel.linear }}
+SET velocity_stats.avg_angular = {{ avg_vel.angular }}
+SET velocity_stats.max_linear = {{ max_vel.linear }}
+SET velocity_stats.max_angular = {{ max_vel.angular }}
+
+WITH [
+{% for vel in velocities %}
+    {properties: {lin_x: {{ vel.lin_x }}, lin_y: {{ vel.lin_y }}, ang_z: {{ vel.ang_z }} },
+     time: {{ vel.time }} }
+    {% if not loop.last %}
+        ,
+    {% endif %}
+{% endfor %}
+] AS batch, velocity_stats
+UNWIND batch as row
+CREATE (velocity:Velocity)<-[:at_time {time: row.time}]-(velocity_stats)
+SET velocity += row.properties

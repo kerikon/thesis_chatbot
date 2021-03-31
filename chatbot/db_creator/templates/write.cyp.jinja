@@ -1,0 +1,128 @@
+MATCH (year:Year)-[:has_month]->(month:Month)-[:has_day]->(day:Day)
+WHERE year.year = {{ year }} AND month.month = {{ month }} AND day.day = {{ day }}
+CREATE (run:Run)-[:at_date]->(day)
+SET run.bagfile_location = "{{ path }}"
+SET run.duration = {{ duration }}
+SET run.start_time = {{ start }}
+SET run.end_time = {{ end }}
+SET run.bagfile_size = {{ size }}
+SET run.num_messages = {{ messages }}
+
+{% for goal in goals %}
+    {% set outer_loop = loop %}
+    CREATE (goal{{ loop.index }}:Goal)<-[:has_goal {time: {{ goal.time }} }]-(run)
+    SET goal{{ loop.index }}.id = "{{ goal.id }}"
+    {% if goal.status %}
+        SET goal{{ loop.index }}.status = "{{ goal.status.name }}"
+    {% endif %}
+    {% if goal.load_id %}
+        SET goal{{ loop.index }}.load_id = "{{ goal.load_id }}"
+        SET goal{{ loop.index }}.load_type = "{{ goal.load_type }}"
+    {% endif %}
+    {% if goal.action %}
+        SET goal{{ loop.index }}.type = "{{ goal.action.type }}"
+        {% if goal.action.path %}
+            CREATE (path{{ loop.index }}:Path)-[:to_reach]->(goal{{ loop.index }})
+            WITH path{{ loop.index }}, goal{{ loop.index }}, run
+            {% for area in goal.action.path %}
+                MATCH (area{{ loop.index }})
+                WHERE area{{ loop.index }}.rel_id = {{ area.rel_id }}
+                CREATE (path{{ outer_loop.index }})-[:at {nr: {{ loop.index }} }]->(area{{ loop.index }})
+                WITH path{{ outer_loop.index }}, goal{{ outer_loop.index }}, run
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+{% for goal_pos in goals_pos %}
+    CREATE (goal_pos{{ loop.index }}:GoalPosition)<-[:at_position]-(run)
+    SET goal_pos{{ loop.index }}.start_x = {{ goal_pos.start_x }}
+    SET goal_pos{{ loop.index }}.start_y = {{ goal_pos.start_y }}
+    SET goal_pos{{ loop.index }}.goal_x = {{ goal_pos.goal_x }}
+    SET goal_pos{{ loop.index }}.goal_y = {{ goal_pos.goal_y }}
+{% endfor %}
+
+{% for experiment in experiments %}
+CREATE (experiment{{ loop.index }}:Experiment)<-[:executed_experiment {time: {{ experiment.time }} }]-(run)
+SET experiment{{ loop.index }}.goal_id = "{{ experiment.id }}"
+SET experiment{{ loop.index }}.type = "{{ experiment.type }}"
+SET experiment{{ loop.index }}.result = "{{ experiment.result }}"
+SET experiment{{ loop.index }}.status = "{{ experiment.status.name }}"
+{% endfor %}
+
+{% for action in all_actions %}
+    {% if action.command_name %}
+        {% if loop.first %}
+            CREATE (action{{ loop.index }}:Command)<-[:at_time {time: {{ action.time }} }]-(run)
+        {% else %}
+            CREATE (action{{ loop.index }}:Command)<-[:at_time {time: {{ action.time }} }]-(action{{ loop.index - 1 }})
+            {% if loop.last %}
+                CREATE (action{{ loop.index }})-[:at_time {time: {{ action.time }} }]->(run)
+            {% endif %}
+        {% endif %}
+        SET action{{ loop.index }}.name = "{{ action.command_name }}"
+        SET action{{ loop.index }}.state = "{{ action.state }}"
+    {% elif action.action %}
+        {% if loop.first %}
+            CREATE (action{{ loop.index }}:DrivingAction)<-[:at_time {time: {{ action.time }} }]-(run)
+        {% else %}
+            CREATE (action{{ loop.index }}:DrivingAction)<-[:at_time {time: {{ action.time }} }]-(action{{ loop.index - 1 }})
+            {% if loop.last %}
+                CREATE (action{{ loop.index }})-[:at_time {time: {{ action.time }} }]->(run)
+            {% endif %}
+        {% endif %}
+        SET action{{ loop.index }}.action = "{{ action.action }}"
+    {% elif action.action_type %}
+        {% if loop.first %}
+            CREATE (action{{ loop.index }}:DockingAction)<-[:at_time {time: {{ action.time }} }]-(run)
+        {% else %}
+            CREATE (action{{ loop.index }}:DockingAction)<-[:at_time {time: {{ action.time }} }]-(action{{ loop.index - 1 }})
+            {% if loop.last %}
+                CREATE (action{{ loop.index }})-[:at_time {time: {{ action.time }} }]->(run)
+            {% endif %}
+        {% endif %}
+        SET action{{ loop.index }}.goal_id = {{ action.goal_id }}
+        SET action{{ loop.index }}.type = "{{ action.action_type }}"
+        {% if action.action_state == '' %}
+            SET action{{ loop.index }}.state = "{{ action.action_status_code.name }}"
+        {% else %}
+            SET action{{ loop.index }}.state = "{{ action.action_state }}"
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+
+{% set joy_space = namespace(joy_vel_nr = 0) %}
+{% for joy in joypad_uses %}
+    {% set outer_loop = loop %}
+    {% for joy_velocities in joy %}
+        {% if loop.first %}
+            CREATE (joy{{ outer_loop.index }}:JoypadUsage)<-[:start_time {time: {{ joy_velocities.time }} }]-(run)
+        {% elif loop.last %}
+            CREATE (joy{{ outer_loop.index }})-[:end_time {time: {{ joy_velocities.time }} }]->(run)
+        {% endif %}
+        CREATE (joy_vel{{ joy_space.joy_vel_nr }}:JoypadVelocity)<-[:at_time {time: {{ joy_velocities.time }} }]-(joy{{ outer_loop.index }})
+        SET joy_vel{{ joy_space.joy_vel_nr }}.lin_x_vel = {{ joy_velocities.lin_x }}
+        SET joy_vel{{ joy_space.joy_vel_nr }}.lin_y_vel = {{ joy_velocities.lin_y }}
+        SET joy_vel{{ joy_space.joy_vel_nr }}.ang_z_vel = {{ joy_velocities.ang_z }}
+        {% set joy_space.joy_vel_nr = joy_space.joy_vel_nr + 1 %}
+    {% endfor %}
+{% endfor %}
+
+CREATE (localization:LocalizationLosses)<-[:uses]-(run)
+{% for cov in cov_inc %}
+    CREATE (cov_inc{{ loop.index }}:CovarianceIncrease)<-[:lost_through]-(localization)
+    SET cov_inc{{ loop.index }}.start_time = {{ cov.start_time }}
+    SET cov_inc{{ loop.index }}.end_time = {{ cov.end_time }}
+    SET cov_inc{{ loop.index }}.max_cov_x = {{ cov.max_cov[0] }}
+    SET cov_inc{{ loop.index }}.max_cov_y = {{ cov.max_cov[1] }}
+    SET cov_inc{{ loop.index }}.max_cov_z = {{ cov.max_cov[2] }}
+{% endfor %}
+
+CREATE (battery:BatteryVoltage)<-[:has]-(run)
+{% for wheel in battery_stats.mins %}
+    CREATE (wheel{{ loop.index }}:Wheel)<-[:of]-(battery)
+    SET wheel{{ loop.index }}.max_voltage = {{ battery_stats.maxs[loop.index0] }}
+    SET wheel{{ loop.index }}.min_voltage = {{ wheel }}
+    SET wheel{{ loop.index }}.avg_voltage = {{ battery_stats.avgs[loop.index0] }}
+{% endfor %}

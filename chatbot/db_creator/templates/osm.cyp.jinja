@@ -1,0 +1,41 @@
+{% for relation in relations %}
+{% if relation.type == "building" %}
+CREATE (rel{{ loop.index }}:Building)
+SET rel{{ loop.index }}.rel_id = {{ relation.id }}
+SET rel{{ loop.index }}.ref = "{{ relation.ref }}"
+{% endif %}
+{% if relation.type == "level" %}
+CREATE (rel{{ loop.index }}:Floor)
+SET rel{{ loop.index }}.rel_id = {{ relation.id }}
+SET rel{{ loop.index }}.ref = "{{ relation.ref }}"
+SET rel{{ loop.index }}.name = "{{ relation.name }}"
+{% endif %}
+{% if relation.type == "corridor" %}
+CREATE (rel{{ loop.index }}:Corridor)
+SET rel{{ loop.index }}.rel_id = {{ relation.id }}
+SET rel{{ loop.index }}.ref = "{{ relation.ref }}"
+{% endif %}
+{% if relation.type == "junction" %}
+CREATE (rel{{ loop.index }}:Junction)
+SET rel{{ loop.index }}.rel_id = {{ relation.id }}
+SET rel{{ loop.index }}.ref = "{{ relation.ref }}"
+{% if relation.junction_type %}
+SET rel{{ loop.index }}.junction_type = "{{ relation.junction_type }}"
+{% endif %}
+{% endif %}
+{% if relation.type == "room" %}
+CREATE (rel{{ loop.index }}:Room)
+SET rel{{ loop.index }}.rel_id = {{ relation.id }}
+SET rel{{ loop.index }}.ref = "{{ relation.ref }}"
+{% endif %}
+{% if relation.type == "area" %}
+CREATE (rel{{ loop.index }}:Area)
+SET rel{{ loop.index }}.rel_id = {{ relation.id }}
+SET rel{{ loop.index }}.ref = "{{ relation.ref }}"
+{% endif %}
+{% if relation.type == "elevator" %}
+CREATE (rel{{ loop.index }}:Elevator)
+SET rel{{ loop.index }}.rel_id = {{ relation.id }}
+SET rel{{ loop.index }}.ref = "{{ relation.ref }}"
+{% endif %}
+{% endfor %}

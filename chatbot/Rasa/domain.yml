@@ -1,0 +1,118 @@
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - bot_challenge
+  - positive_feedback
+  - negative_feedback
+  - about_you
+  - topic_change
+  - general_capabilities:
+      use_entities: []
+  - run_failure
+  - run_failure_docking
+  - run_failure_navigation
+  - run_failure_automation
+  - run_failure_localization
+  - run_no_failure
+  - run_at_date
+  - runs_in_month
+  - runs_in_year
+  - list_all_runs
+  - number_selection
+  - date_selection
+  - run_path
+  - run_position_at_time
+  - goal_status
+  - exp_status
+  - action_at_time
+  - num_runs_recorded
+  - info_selected_run
+
+actions:
+  - action_get_run_at_date
+  - action_list_dates_for_runs
+  - action_select_run
+  - action_failure_for_run
+  - action_search_runs_with_condition
+  - action_slot_reset
+  - action_all_slot_reset
+  - action_display_path_for_run
+  - action_display_position_at_time_for_run
+  - action_goal_or_exp_status
+  - action_get_action_at_time
+  - action_get_num_runs_recorded
+  - action_selected_run_info
+  - action_default_fallback
+
+slots:
+  last_runs:
+    type: unfeaturized
+    auto_fill: False
+  selected_run:
+    type: text
+    auto_fill: False
+  condition:
+    type: text
+    auto_fill: False
+  last_asked_time:
+    type: text
+    auto_fill: False
+  last_rel_intent:
+    type: text
+    auto_fill: False
+
+entities:
+  - number
+  - ordinal
+  - date
+  - daterange
+  - condition
+  - time
+  - path
+
+responses:
+  utter_greet:
+    - text: "Greetings, I am the robot used in the ROPOD project.
+             You can ask me about when I collected data, errors during runs, traveled paths,
+             fullfilled goals and more. About what do you want to know more?"
+
+  utter_did_that_help:
+    - text: "Did that help you?"
+
+  utter_goodbye:
+    - text: "It was a pleasure talking to you. Have a nice day :)."
+
+  utter_iamabot:
+    - text: "I am a bot, powered by Rasa."
+
+  utter_thanks:
+    - text: "Thank you!"
+    - text: "That is very kind of you to say!"
+
+  utter_topic_change:
+    - text: "Okay, let us change topics. What else do you want to know about the stored runs?"
+    - text: "Ok, let us switch topics. What else do you want to know about the stored runs?"
+
+  utter_information_available:
+    - text: "I can give you information about:\n
+             Failures or Errors\n
+             Performed Actions at given time\n
+             Reached Goals\n
+             Traveled Path and Position at given time\n
+             Total Number of Runs"
+
+  utter_what_else:
+    - text: "What else can I help you with?"
+    - text: "Anything else you want to ask me?"
+    - text: "Anything else I can help you with?"
+    - text: "Any further questions?"
+
+  utter_default:
+    - text: "Sorry, I did not understand you. Can you rephrase or ask about something different?"
+    - text: "Sorry, I do not know what you are saying. Please rephrase or ask about something different."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: false

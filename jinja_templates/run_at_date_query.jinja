@@ -1,0 +1,26 @@
+MATCH (year:Year)-[:has_month]->(month:Month)-[:has_day]->(day:Day)<-[:at_date]-(runs:Run)
+{% if year %}
+    WHERE year.year = {{ year }}
+    WITH runs, year, month, day
+{% endif %}
+{% if month %}
+    WHERE month.month = {{ month }}
+    WITH runs, year, month, day
+{% endif %}
+{% if day %}
+    WHERE day.day = {{ day }}
+    WITH runs, year, month, day
+{% endif %}
+{% if last_runs %}
+    UNWIND $list_param AS list
+    WITH runs, year, month, day, list
+    WHERE runs.bagfile_location IN list
+{% endif %}
+{% if selected_run %}
+    WHERE runs.bagfile_location = "{{ selected_run }}"
+{% endif %}
+RETURN runs
+{% if selected_run %}
+,year,month,day
+{% endif %}
+ORDER BY runs.start_time

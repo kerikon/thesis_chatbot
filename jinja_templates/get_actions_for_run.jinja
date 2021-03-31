@@ -1,8 +1,0 @@
-MATCH (year:Year)-[:has_month]->(month:Month)-[:has_day]->(day:Day)<-[:at_date]-(run:Run)
-WHERE run.bagfile_location = "{{ selected_run}}"
-CALL apoc.path.subgraphAll(run, {
-        relationshipFilter: "at_time>",
-        labelFilter: "Command|DockingAction|DrivingAction"
-    })
-    YIELD nodes, relationships
-RETURN year, month, day, run, nodes, relationships

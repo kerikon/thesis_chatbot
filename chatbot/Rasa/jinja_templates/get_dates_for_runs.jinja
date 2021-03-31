@@ -1,0 +1,20 @@
+{% block condition %}MATCH (runs:Run)-[:at_date]->(d:Day)<-[:has_day]-(m:Month)<-[:has_month]-(y:Year){% endblock %}
+{% if year %}
+    WHERE y.year = {{ year }}
+    WITH runs, y, m, d
+{% endif %}
+{% if month %}
+    WHERE m.month = {{ month }}
+    WITH runs, y, m, d
+{% endif %}
+{% if day %}
+    WHERE d.day = {{ day }}
+    WITH runs, y, m, d
+{% endif %}
+{% if last_runs %}
+    UNWIND $list_param AS list
+    WITH runs, y, m, d, list
+    WHERE runs.bagfile_location IN list
+{% endif %}
+RETURN DISTINCT y, m, d, count(runs) AS num_runs, COLLECT(runs.bagfile_location) as run_ids
+ORDER BY y.year, m.month, d.day
